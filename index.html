@@ -44,6 +44,7 @@
           <h2>Comment jouer ?</h2>
           <p>Clique sur les cases pour placer des sons sur les 8 temps. Appuie sur Play pour entendre ta boucle.</p>
           <p>Le métronome donne le tempo. Le temps 1 est souvent le point de départ du rythme.</p>
+          <p>Pour les instruments mélodiques, choisis une note puis place-la dans la grille.</p>
           <p>Essaie le mode Défi pour suivre une consigne et gagner un bonus.</p>
         </div>
       </section>
@@ -84,6 +85,14 @@
           </div>
         </section>
 
+        <section class="note-panel" aria-label="Notes de musique">
+          <div>
+            <span class="panel-label">Notes</span>
+            <p>Choisis une note, puis place Piano, Synth, Saxo ou Guitare dans la grille.</p>
+          </div>
+          <div id="note-buttons" class="note-buttons" role="group" aria-label="Choisir une note"></div>
+        </section>
+
         <section id="challenge-panel" class="challenge-panel" hidden>
           <div>
             <span class="panel-label">Défi</span>
@@ -101,6 +110,14 @@
 
         <section class="beat-area" aria-label="Grille musicale">
           <div id="beat-grid" class="beat-grid"></div>
+        </section>
+
+        <section class="sheet-panel" aria-label="Mini partition">
+          <div class="sheet-title">
+            <span class="panel-label">Mini partition</span>
+            <strong id="selected-note-label">Note choisie : Do</strong>
+          </div>
+          <div id="music-sheet" class="music-sheet"></div>
         </section>
 
         <section class="json-tools">

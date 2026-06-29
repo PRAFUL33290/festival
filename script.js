@@ -1,12 +1,24 @@
 const instruments = [
-  { id: "kick", name: "Kick", icon: "🥁", color: "#ff8a3d" },
-  { id: "snare", name: "Snare", icon: "🎯", color: "#f4518f" },
-  { id: "hihat", name: "Hi-Hat", icon: "✨", color: "#ffd23f" },
-  { id: "clap", name: "Clap", icon: "👏", color: "#76e3a0" },
-  { id: "tom", name: "Tom", icon: "🪘", color: "#7c5cff" },
-  { id: "shaker", name: "Shaker", icon: "🎶", color: "#00a9c8" },
-  { id: "bass", name: "Bass", icon: "🔊", color: "#86d75f" },
-  { id: "bell", name: "Bell", icon: "🔔", color: "#ffcf6e" }
+  { id: "kick", name: "Kick", icon: "🥁", color: "#ff8a3d", type: "drum" },
+  { id: "snare", name: "Snare", icon: "🎯", color: "#f4518f", type: "drum" },
+  { id: "hihat", name: "Hi-Hat", icon: "✨", color: "#ffd23f", type: "drum" },
+  { id: "clap", name: "Clap", icon: "👏", color: "#76e3a0", type: "drum" },
+  { id: "tom", name: "Tom", icon: "🪘", color: "#7c5cff", type: "drum" },
+  { id: "shaker", name: "Shaker", icon: "🎶", color: "#00a9c8", type: "drum" },
+  { id: "bass", name: "Bass", icon: "🔊", color: "#86d75f", type: "drum" },
+  { id: "bell", name: "Bell", icon: "🔔", color: "#ffcf6e", type: "drum" },
+  { id: "piano", name: "Piano", icon: "🎹", color: "#8bd3ff", type: "melody", wave: "triangle" },
+  { id: "synth", name: "Synth", icon: "🕹️", color: "#b99cff", type: "melody", wave: "sawtooth" },
+  { id: "saxo", name: "Saxo", icon: "🎷", color: "#ffbf54", type: "melody", wave: "square" },
+  { id: "guitar", name: "Guitare", icon: "🎸", color: "#ff9f7a", type: "melody", wave: "triangle" }
+];
+
+const notes = [
+  { id: "C4", name: "Do", symbol: "♪", frequency: 261.63, step: 5 },
+  { id: "D4", name: "Ré", symbol: "♩", frequency: 293.66, step: 4 },
+  { id: "E4", name: "Mi", symbol: "♫", frequency: 329.63, step: 3 },
+  { id: "G4", name: "Sol", symbol: "♬", frequency: 392, step: 2 },
+  { id: "A4", name: "La", symbol: "♭", frequency: 440, step: 1 }
 ];
 
 const challenges = [
@@ -33,6 +45,10 @@ const challenges = [
   {
     text: "Fais une rythmique de festival avec Clap et Shaker",
     test: () => state.pattern.clap.some(Boolean) && state.pattern.shaker.some(Boolean)
+  },
+  {
+    text: "Place une petite mélodie avec Piano ou Guitare",
+    test: () => state.pattern.piano.some(Boolean) || state.pattern.guitar.some(Boolean)
   }
 ];
 
@@ -50,6 +66,7 @@ const state = {
   isPlaying: false,
   metronomeOn: true,
   mode: "beginner",
+  selectedNote: "C4",
   challengeIndex: 0,
   challengeWon: false,
   loopTimer: null,
@@ -66,6 +83,7 @@ function initGame() {
     state.pattern[instrument.id] = Array(8).fill(false);
   });
   createGrid();
+  createNotePicker();
   bindEvents();
   setMode("beginner");
   updateBPM();
@@ -92,6 +110,9 @@ function cacheDom() {
   dom.bpmValue = document.querySelector("#bpm-value");
   dom.currentBeat = document.querySelector("#current-beat");
   dom.beatLight = document.querySelector("#beat-light");
+  dom.noteButtons = document.querySelector("#note-buttons");
+  dom.selectedNoteLabel = document.querySelector("#selected-note-label");
+  dom.musicSheet = document.querySelector("#music-sheet");
   dom.modeButtons = document.querySelectorAll(".mode-button");
   dom.challengePanel = document.querySelector("#challenge-panel");
   dom.challengeText = document.querySelector("#challenge-text");
@@ -168,7 +189,7 @@ function createGrid() {
       <span class="instrument-name"><span>${instrument.icon}</span><span>${instrument.name}</span></span>
       <button class="test-button" type="button" aria-label="Tester ${instrument.name}">Test</button>
     `;
-    label.querySelector("button").addEventListener("click", () => playInstrument(instrument.id));
+    label.querySelector("button").addEventListener("click", () => playInstrument(instrument.id, state.selectedNote));
     dom.grid.appendChild(label);
 
     for (let beat = 0; beat < 8; beat += 1) {
@@ -193,9 +214,15 @@ function makeEmptyHeader() {
 }
 
 function toggleCell(instrumentId, beat) {
-  state.pattern[instrumentId][beat] = !state.pattern[instrumentId][beat];
+  const instrument = getInstrument(instrumentId);
+  if (instrument.type === "melody") {
+    state.pattern[instrumentId][beat] = state.pattern[instrumentId][beat] === state.selectedNote ? false : state.selectedNote;
+  } else {
+    state.pattern[instrumentId][beat] = !state.pattern[instrumentId][beat];
+  }
   state.challengeWon = false;
   renderGrid();
+  updateSheet();
   updateScore();
 }
 
@@ -234,8 +261,9 @@ function playCurrentBeat() {
   });
 
   instruments.forEach((instrument) => {
-    if (state.pattern[instrument.id][state.currentBeat]) {
-      playInstrument(instrument.id);
+    const stepValue = state.pattern[instrument.id][state.currentBeat];
+    if (stepValue) {
+      playInstrument(instrument.id, typeof stepValue === "string" ? stepValue : state.selectedNote);
     }
   });
 
@@ -247,9 +275,15 @@ function playCurrentBeat() {
   state.currentBeat = (state.currentBeat + 1) % 8;
 }
 
-function playInstrument(instrumentId) {
+function playInstrument(instrumentId, noteId = state.selectedNote) {
   ensureAudioContext();
   const now = state.audioContext.currentTime;
+  const instrument = getInstrument(instrumentId);
+  if (instrument?.type === "melody") {
+    playMelodicInstrument(instrument, getNote(noteId), now);
+    return;
+  }
+
   const sounds = {
     kick: () => playKick(now),
     snare: () => playSnare(now),
@@ -307,6 +341,7 @@ function clearPattern() {
   });
   state.challengeWon = false;
   renderGrid();
+  updateSheet();
   updateScore();
   showToast("Grille effacée.");
 }
@@ -319,11 +354,17 @@ function randomPattern() {
 
   activeInstruments.forEach((instrument) => {
     const chance = instrument.id === "kick" || instrument.id === "hihat" ? 0.38 : 0.24;
-    state.pattern[instrument.id] = state.pattern[instrument.id].map(() => Math.random() < chance);
+    state.pattern[instrument.id] = state.pattern[instrument.id].map(() => {
+      if (Math.random() >= chance) {
+        return false;
+      }
+      return instrument.type === "melody" ? notes[Math.floor(Math.random() * notes.length)].id : true;
+    });
   });
 
   state.challengeWon = false;
   renderGrid();
+  updateSheet();
   updateScore();
   showToast("Pattern surprise créé !");
 }
@@ -369,6 +410,7 @@ function setMode(mode) {
     updateChallengeText();
   }
   renderGrid();
+  updateSheet();
   updateScore();
 }
 
@@ -380,9 +422,13 @@ function renderGrid() {
     document.querySelector(`[data-instrument="${instrument.id}"].instrument-cell`)?.classList.toggle("is-muted", muted);
     document.querySelectorAll(`.grid-cell[data-instrument="${instrument.id}"]`).forEach((cell) => {
       const beat = Number(cell.dataset.beat);
+      const stepValue = state.pattern[instrument.id][beat];
       cell.classList.toggle("is-muted", muted);
-      cell.classList.toggle("is-active", state.pattern[instrument.id][beat]);
-      cell.setAttribute("aria-pressed", String(state.pattern[instrument.id][beat]));
+      cell.classList.toggle("is-active", Boolean(stepValue));
+      cell.classList.toggle("has-note", instrument.type === "melody" && Boolean(stepValue));
+      cell.textContent = instrument.type === "melody" && stepValue ? getNote(stepValue).name : "";
+      cell.setAttribute("aria-pressed", String(Boolean(stepValue)));
+      cell.setAttribute("aria-label", getCellLabel(instrument, beat, stepValue));
     });
   });
 }
@@ -411,6 +457,7 @@ function getPatternData() {
     bpm: state.bpm,
     mode: state.mode,
     metronomeOn: state.metronomeOn,
+    selectedNote: state.selectedNote,
     pattern: state.pattern
   };
 }
@@ -418,8 +465,13 @@ function getPatternData() {
 function applyPatternData(data) {
   instruments.forEach((instrument) => {
     const row = Array.isArray(data.pattern?.[instrument.id]) ? data.pattern[instrument.id] : [];
-    state.pattern[instrument.id] = Array.from({ length: 8 }, (_, index) => Boolean(row[index]));
+    state.pattern[instrument.id] = Array.from({ length: 8 }, (_, index) => normalizeStepValue(instrument, row[index]));
   });
+
+  if (notes.some((note) => note.id === data.selectedNote)) {
+    state.selectedNote = data.selectedNote;
+    updateSelectedNoteUI();
+  }
 
   if (Number.isFinite(Number(data.bpm))) {
     dom.bpmSlider.value = String(Math.min(180, Math.max(60, Number(data.bpm))));
@@ -437,6 +489,7 @@ function applyPatternData(data) {
     renderGrid();
   }
   state.challengeWon = false;
+  updateSheet();
   updateScore();
 }
 
@@ -493,6 +546,29 @@ function playClap(now) {
 function playBell(now) {
   playTone(now, 1046, 0.48, "sine", 0.18, 1046);
   playTone(now, 1568, 0.32, "sine", 0.1, 1568);
+}
+
+function playMelodicInstrument(instrument, note, now) {
+  if (instrument.id === "piano") {
+    playTone(now, note.frequency, 0.36, "triangle", 0.26, note.frequency);
+    playTone(now + 0.01, note.frequency * 2, 0.18, "sine", 0.06, note.frequency * 2);
+    return;
+  }
+
+  if (instrument.id === "saxo") {
+    playTone(now, note.frequency, 0.42, "square", 0.16, note.frequency * 0.995);
+    playTone(now, note.frequency * 2, 0.22, "sine", 0.05, note.frequency * 2);
+    return;
+  }
+
+  if (instrument.id === "guitar") {
+    playTone(now, note.frequency, 0.28, "triangle", 0.22, note.frequency * 0.5);
+    playTone(now + 0.018, note.frequency * 1.5, 0.16, "triangle", 0.08, note.frequency * 1.2);
+    return;
+  }
+
+  playTone(now, note.frequency, 0.32, instrument.wave, 0.2, note.frequency * 0.98);
+  playTone(now, note.frequency * 1.01, 0.28, "sine", 0.08, note.frequency);
 }
 
 function playTone(now, frequency, duration, type, volume, endFrequency) {
@@ -558,4 +634,95 @@ function showToast(message) {
   state.toastTimer = window.setTimeout(() => {
     dom.toast.classList.remove("is-visible");
   }, 2200);
+}
+
+function createNotePicker() {
+  dom.noteButtons.innerHTML = "";
+  notes.forEach((note) => {
+    const button = document.createElement("button");
+    button.className = "note-button";
+    button.type = "button";
+    button.dataset.note = note.id;
+    button.innerHTML = `<span>${note.symbol}</span><strong>${note.name}</strong>`;
+    button.addEventListener("click", () => {
+      state.selectedNote = note.id;
+      updateSelectedNoteUI();
+      showToast(`Note choisie : ${note.name}`);
+    });
+    dom.noteButtons.appendChild(button);
+  });
+  updateSelectedNoteUI();
+  updateSheet();
+}
+
+function updateSelectedNoteUI() {
+  const note = getNote(state.selectedNote);
+  dom.selectedNoteLabel.textContent = `Note choisie : ${note.name}`;
+  dom.noteButtons.querySelectorAll(".note-button").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.note === state.selectedNote);
+    button.setAttribute("aria-pressed", String(button.dataset.note === state.selectedNote));
+  });
+}
+
+function updateSheet() {
+  dom.musicSheet.innerHTML = "";
+  for (let beat = 0; beat < 8; beat += 1) {
+    const placedNotes = instruments
+      .filter((instrument) => instrument.type === "melody")
+      .map((instrument) => {
+        const noteId = state.pattern[instrument.id][beat];
+        return noteId ? { instrument, note: getNote(noteId) } : null;
+      })
+      .filter(Boolean);
+
+    const measure = document.createElement("div");
+    measure.className = "sheet-beat";
+    measure.dataset.beat = String(beat);
+    measure.innerHTML = `<span class="sheet-beat-number">${beat + 1}</span><div class="staff-lines"></div>`;
+
+    placedNotes.forEach(({ instrument, note }) => {
+      const noteElement = document.createElement("span");
+      noteElement.className = "sheet-note";
+      noteElement.style.setProperty("--note-step", String(note.step));
+      noteElement.style.setProperty("--note-color", instrument.color);
+      noteElement.textContent = note.symbol;
+      noteElement.title = `${instrument.name} ${note.name}`;
+      measure.appendChild(noteElement);
+    });
+
+    if (placedNotes.length === 0) {
+      const rest = document.createElement("span");
+      rest.className = "sheet-rest";
+      rest.textContent = "•";
+      measure.appendChild(rest);
+    }
+
+    dom.musicSheet.appendChild(measure);
+  }
+}
+
+function getInstrument(instrumentId) {
+  return instruments.find((instrument) => instrument.id === instrumentId);
+}
+
+function getNote(noteId) {
+  return notes.find((note) => note.id === noteId) || notes[0];
+}
+
+function getCellLabel(instrument, beat, stepValue) {
+  if (instrument.type === "melody") {
+    const noteText = stepValue ? `note ${getNote(stepValue).name}` : `note choisie ${getNote(state.selectedNote).name}`;
+    return `${instrument.name}, temps ${beat + 1}, ${noteText}`;
+  }
+  return `${instrument.name}, temps ${beat + 1}`;
+}
+
+function normalizeStepValue(instrument, value) {
+  if (instrument.type === "melody") {
+    if (notes.some((note) => note.id === value)) {
+      return value;
+    }
+    return value ? state.selectedNote : false;
+  }
+  return Boolean(value);
 }
