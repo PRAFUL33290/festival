@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Festival Beat Maker</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="sky" aria-hidden="true">
+      <div class="sun"></div>
+      <div class="cloud cloud-a"></div>
+      <div class="cloud cloud-b"></div>
+      <div class="bunting">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="confetti-field"></div>
+    </div>
+
+    <main>
+      <section id="home-screen" class="screen home-screen" aria-labelledby="home-title">
+        <div class="spotlight left"></div>
+        <div class="spotlight right"></div>
+        <div class="home-copy">
+          <p class="tag">ALSH Summer Festival</p>
+          <h1 id="home-title">Festival Beat Maker</h1>
+          <p class="subtitle">Crée ta rythmique de festival !</p>
+          <div class="home-actions">
+            <button id="start-button" class="button primary" type="button">Jouer</button>
+            <button id="how-button" class="button secondary" type="button">Comment jouer ?</button>
+          </div>
+        </div>
+        <div class="stage" aria-hidden="true">
+          <div class="speaker"></div>
+          <div class="dj-booth">🎧</div>
+          <div class="speaker"></div>
+        </div>
+      </section>
+
+      <section id="help-panel" class="help-panel" hidden>
+        <div class="help-content">
+          <button id="close-help" class="icon-button" type="button" aria-label="Fermer l'aide">×</button>
+          <h2>Comment jouer ?</h2>
+          <p>Clique sur les cases pour placer des sons sur les 8 temps. Appuie sur Play pour entendre ta boucle.</p>
+          <p>Le métronome donne le tempo. Le temps 1 est souvent le point de départ du rythme.</p>
+          <p>Essaie le mode Défi pour suivre une consigne et gagner un bonus.</p>
+        </div>
+      </section>
+
+      <section id="game-screen" class="screen game-screen is-hidden" aria-labelledby="game-title">
+        <header class="game-header">
+          <div>
+            <p class="tag">Atelier rythme</p>
+            <h2 id="game-title">Festival Beat Maker</h2>
+          </div>
+          <div class="mode-control" role="group" aria-label="Mode de jeu">
+            <button class="mode-button is-active" type="button" data-mode="beginner">Débutant</button>
+            <button class="mode-button" type="button" data-mode="complete">Complet</button>
+            <button class="mode-button" type="button" data-mode="challenge">Défi</button>
+          </div>
+        </header>
+
+        <section class="lesson-strip" aria-live="polite">
+          <span id="lesson-message">Un rythme est une suite de sons placés dans le temps.</span>
+        </section>
+
+        <section class="control-panel" aria-label="Contrôles du jeu">
+          <button id="play-button" class="button primary" type="button">▶ Play</button>
+          <button id="stop-button" class="button danger" type="button">■ Stop</button>
+          <button id="clear-button" class="button secondary" type="button">Effacer tout</button>
+          <button id="random-button" class="button secondary" type="button">Pattern aléatoire</button>
+          <button id="metronome-button" class="button toggle is-on" type="button" aria-pressed="true">Métronome ON</button>
+          <button id="save-button" class="button secondary" type="button">Sauvegarder</button>
+          <button id="load-button" class="button secondary" type="button">Charger</button>
+        </section>
+
+        <section class="tempo-panel">
+          <label for="bpm-slider">Tempo <strong><span id="bpm-value">100</span> BPM</strong></label>
+          <input id="bpm-slider" type="range" min="60" max="180" value="100">
+          <div class="metronome-display" aria-live="polite">
+            <span id="beat-light" class="beat-light"></span>
+            <span>Temps <strong id="current-beat">1</strong></span>
+          </div>
+        </section>
+
+        <section id="challenge-panel" class="challenge-panel" hidden>
+          <div>
+            <span class="panel-label">Défi</span>
+            <p id="challenge-text"></p>
+          </div>
+          <button id="check-challenge" class="button primary" type="button">Vérifier</button>
+          <p id="challenge-result" class="challenge-result" aria-live="polite"></p>
+        </section>
+
+        <section class="score-board" aria-label="Score">
+          <div><span>Score</span><strong id="score">0</strong></div>
+          <div><span>Instruments</span><strong id="instrument-count">0</strong></div>
+          <div><span>Sons placés</span><strong id="sound-count">0</strong></div>
+        </section>
+
+        <section class="beat-area" aria-label="Grille musicale">
+          <div id="beat-grid" class="beat-grid"></div>
+        </section>
+
+        <section class="json-tools">
+          <div class="json-actions">
+            <button id="export-button" class="button secondary" type="button">Exporter JSON</button>
+            <button id="import-button" class="button secondary" type="button">Importer JSON</button>
+          </div>
+          <textarea id="json-box" rows="4" placeholder="Le JSON de ta rythmique apparaîtra ici. Tu peux aussi coller un JSON puis cliquer sur Importer JSON." aria-label="Import et export JSON"></textarea>
+        </section>
+
+        <div id="audience" class="audience" aria-hidden="true">
+          <span>🙌</span><span>🧢</span><span>🎈</span><span>👏</span><span>😄</span><span>🎉</span><span>🙌</span><span>👏</span>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="success-confetti" class="success-confetti" aria-hidden="true"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
